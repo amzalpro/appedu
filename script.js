@@ -134,30 +134,41 @@ async function loadDataFromJsonFile() {
 }
 
 async function saveDataToLocalStorage() {
-    // Remplace la persistance locale par l'écriture vers data.json
     const json = JSON.stringify(appState, null, 2);
-    // Tentative via File System Access API si disponible
-    if (window.showSaveFilePicker) {
-        try {
-            if (!window.__dataFileHandle) {
-                window.__dataFileHandle = await window.showSaveFilePicker({
-                    suggestedName: 'data.json',
-                    types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
-                });
-            }
-            const writable = await window.__dataFileHandle.createWritable();
-            await writable.write(json);
-            await writable.close();
-            showAlert('Données sauvegardées dans data.json', 'success');
-            return;
-        } catch (e) {
-            console.warn('Écriture via File System Access refusée/échouée, fallback téléchargement.', e);
-        }
+    localStorage.setItem(APP_DATA_KEY, json);
+    try {
+        const res = await fetch('./data.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: json });
+        if (!res.ok) throw new Error('PUT /data.json non autorisé');
+        showAlert('Données enregistrées dans data.json', 'success');
+    } catch (e) {
+        console.warn('Écriture dans data.json impossible depuis le navigateur:', e);
+        showAlert("Impossible d'écrire dans data.json depuis le navigateur. Données conservées localement.", 'warning');
     }
-    // Fallback: téléchargement d’un fichier data.json
-    downloadFile('data.json', json, 'application/json');
-    showAlert('Fichier data.json téléchargé (enregistrez-le dans le dossier de l\'app).', 'info');
 }
+
+async function saveDataToAppFile() {
+    try {
+        const res = await fetch('./data.json', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(appState, null, 2),
+        });
+        if (!res.ok) throw new Error('PUT /data.json refusé');
+        showAlert('Données enregistrées dans data.json', 'success');
+    } catch (e) {
+        console.warn('Sauvegarde data.json échouée:', e);
+        showAlert("Écriture dans data.json non possible depuis ce contexte. Données gardées localement.", 'warning');
+    }
+}
+window.saveDataToAppFile = saveDataToAppFile;
+
+async function reloadDataFromAppFile() {
+    await loadDataFromJsonFile();
+    localStorage.setItem(APP_DATA_KEY, JSON.stringify(appState)); // aligne le cache local
+    initializeAppData();
+    showAlert('Données rechargées depuis data.json', 'success');
+}
+window.reloadDataFromAppFile = reloadDataFromAppFile;
 
 function loadDataFromLocalStorage() {
     const data = localStorage.getItem(APP_DATA_KEY);
