@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion Scolaire Complète - Système d'Évaluations Avancé</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ical.js/1.5.0/ical.min.js"></script>
+    <style>
+        /* CSS Variables */
+        :root {
+            --primary-color: #2563eb;
+            --primary-color-light: #60a5fa;
+            --primary-color-dark: #1e40af;
+            --secondary-color: #4b5563;
+            --accent-color: #8b5cf6;
+            --success-color: #16a34a;
+            --warning-color: #facc15;
+            --danger-color: #dc2626;
+            --info-color: #0ea5e9;
+
+            --bg-primary: #f9fafb;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f3f4f6;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --border-radius: 0.5rem;
+            --header-height: 60px;
+            --nav-height: 50px;
+            --transition-speed: 0.2s ease-in-out;
+
+            /* Mastery Levels */
+            --mastery-excellent-bg: #dcfce7;
+            --mastery-excellent-text: #14532d;
+            --mastery-good-bg: #fef9c3;
+            --mastery-good-text: #854d0e;
+            --mastery-fragile-bg: #fee2e2;
+            --mastery-fragile-text: #991b1b;
+            --mastery-insufficient-bg: #e5e7eb;
+            --mastery-insufficient-text: #374151;
+            
+            /* Special Statuses */
+            --status-disp-bg: #e0f2fe; --status-disp-text: #075985;
+            --status-abs-bg: #fee2e2; --status-abs-text: #991b1b;
+            --status-ne-bg: #f3f4f6; --status-ne-text: #4b5563;
+            --status-nr-bg: #f3f4f6; --status-nr-text: #4b5563;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #3b82f6;
+            --primary-color-light: #93c5fd;
+            --primary-color-dark: #2563eb;
+            
+            --bg-primary: #111827;
+            --bg-secondary: #1f2937;
+            --bg-tertiary: #374151;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-muted: #9ca3af;
+            --border-color: #374151;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2), 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+
+            /* Dark Mastery Levels */
+            --mastery-excellent-bg: #14532d;
+            --mastery-excellent-text: #dcfce7;
+            --mastery-good-bg: #854d0e;
+            --mastery-good-text: #fef9c3;
+            --mastery-fragile-bg: #991b1b;
+            --mastery-fragile-text: #fee2e2;
+            --mastery-insufficient-bg: #4b5563;
+            --mastery-insufficient-text: #e5e7eb;
+            
+            /* Dark Special Statuses */
+            --status-disp-bg: #0c4a6e; --status-disp-text: #e0f2fe;
+            --status-abs-bg: #991b1b; --status-abs-text: #fee2e2;
+            --status-ne-bg: #4b5563; --status-ne-text: #f3f4f6;
+            --status-nr-bg: #4b5563; --status-nr-text: #f3f4f6;
+        }
+
+        /* Reset & Base */
+        *, *::before, *::after { box-sizing: border-box; }
+        body, h1, h2, h3, p, ul, ol, figure { margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            transition: background-color var(--transition-speed), color var(--transition-speed);
+        }
+        button, input, select, textarea { font: inherit; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--secondary-color); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+        
+        /* Main Layout */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        header {
+            position: fixed;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 1rem;
+            height: var(--header-height);
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+        }
+        .logo { display: flex; align-items: center; gap: 0.5rem; font-size: 1.2rem; font-weight: 600; color: var(--primary-color); }
+        .header-actions { display: flex; align-items: center; gap: 1rem; }
+        .user-info { font-size: 0.9rem; color: var(--text-secondary); }
+        .sync-status { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--success-color); }
+        .sync-status.saving { color: var(--warning-color); animation: pulse 1.5s infinite; }
+        .sync-status .fa-cloud-check, .sync-status .fa-spinner { transition: color 0.3s; }
+        
+        .nav-container {
+            position: fixed;
+            top: var(--header-height);
+            z-index: 999;
+            width: 100%;
+            background-color: var(--bg-secondary);
+            overflow-x: auto;
+            border-bottom: 1px solid var(--border-color);
+            scrollbar-width: thin;
+            scrollbar-color: var(--secondary-color) var(--bg-primary);
+        }
+        .nav-tabs {
+            display: flex;
+            align-items: center;
+            height: var(--nav-height);
+        }
+        .nav-tab {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0 1rem;
+            height: 100%;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            transition: color var(--transition-speed), border-color var(--transition-speed);
+        }
+        .nav-tab:hover { color: var(--primary-color); }
+        .nav-tab.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+
+        main {
+            flex-grow: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            margin-top: calc(var(--header-height) + var(--nav-height));
+        }
+        .tab-content { display: none; animation: fadeIn 0.5s; }
+        .tab-content.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* UI Components */
+        .card {
+            background-color: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-title { font-size: 1.2rem; font-weight: 600; }
+        .card-actions { display: flex; gap: 0.5rem; }
+        .card-body { padding: 1.5rem; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid transparent;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-primary:hover:not(:disabled) { background-color: var(--primary-color-dark); }
+        .btn-secondary { background-color: var(--bg-tertiary); color: var(--text-primary); border-color: var(--border-color); }
+        .btn-secondary:hover:not(:disabled) { background-color: var(--border-color); }
+        .btn-danger { background-color: var(--danger-color); color: white; }
+        .btn-icon { background: none; border: none; padding: 0.5rem; color: var(--text-secondary); cursor: pointer; border-radius: 50%; width:32px; height: 32px;}
+        .btn-icon:hover { background-color: var(--bg-tertiary); color: var(--primary-color); }
+        
+        /* Forms */
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            color: var(--text-primary);
+            transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px var(--primary-color-light);
+        }
+        .form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+        .form-row > .form-group { flex: 1; min-width: 200px; }
+        
+        /* Table */
+        .table-container { overflow-x: auto; }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        .table th, .table td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); }
+        .table th { font-weight: 600; color: var(--text-secondary); }
+        .table tbody tr:hover { background-color: var(--bg-tertiary); }
+        .table td .actions { display: flex; gap: 0.5rem; }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s 0.3s, opacity 0.3s;
+        }
+        .modal.open { visibility: visible; opacity: 1; transition-delay: 0s; }
+        .modal-content {
+            background-color: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.95);
+            transition: transform 0.3s;
+        }
+        .modal.open .modal-content { transform: scale(1); }
+        .modal-content.large { max-width: 800px; }
+        .modal-content.xlarge { max-width: 1200px; }
+
+        .modal-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-title { font-size: 1.25rem; font-weight: 600; }
+        .modal-body { padding: 1.5rem; overflow-y: auto; }
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+        
+        /* Alerts */
+        .alert-container {
+            position: fixed;
+            top: calc(var(--header-height) + var(--nav-height) + 1rem);
+            right: 1rem;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .alert {
+            min-width: 250px;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            color: white;
+            box-shadow: var(--shadow);
+            animation: alertSlideIn 0.3s;
+            opacity: 0.95;
+        }
+        .alert.alert-success { background-color: var(--success-color); }
+        .alert.alert-danger { background-color: var(--danger-color); }
+        .alert.alert-warning { background-color: var(--warning-color); color: var(--text-primary); }
+        .alert.alert-info { background-color: var(--info-color); }
+        @keyframes alertSlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        
+        /* Specific Styles */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .stat-card {
+            padding: 1.5rem;
+            text-align: center;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+        }
+        .stat-value { font-size: 2rem; font-weight: 700; color: var(--primary-color); }
+        .stat-label { color: var(--text-secondary); }
+
+        /* Grade Table */
+        .grade-table-container { max-height: calc(100vh - 250px); overflow: auto; }
+        .grade-table { border-spacing: 0; }
+        .grade-table th, .grade-table td { white-space: nowrap; }
+        .grade-table th.student-name-col, .grade-table td.student-name-col {
+            position: sticky;
+            left: 0;
+            background-color: var(--bg-secondary);
+            z-index: 10;
+        }
+        .grade-table th.average-col, .grade-table td.average-col {
+            position: sticky;
+            right: 0;
+            background-color: var(--bg-secondary);
+            z-index: 10;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+        }
+        .eval-header { text-align: center; cursor: pointer; }
+        .eval-header .eval-name { font-weight: 600; }
+        .eval-header .eval-info { font-size: 0.8rem; color: var(--text-muted); }
+        .eval-header .eval-delete { display: none; }
+        .eval-header:hover .eval-delete { display: inline-block; color: var(--danger-color); }
+
+        .grade-cell { text-align: center; cursor: pointer; }
+        .grade-cell:hover { background-color: var(--bg-tertiary); }
+        .grade-excellent { color: var(--mastery-excellent-text); font-weight: 600; }
+        .grade-good { color: var(--text-primary); }
+        .grade-warning { color: var(--warning-color); font-weight: 600; }
+        .grade-bad { color: var(--danger-color); font-weight: 600; }
+        .special-grade { font-style: italic; color: var(--text-muted); }
+        .skill-assessment-value {
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .level-color-preview {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .skills-checkbox-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+        }
+        .skills-checkbox-container label { display: flex; align-items: center; gap: 0.5rem; }
+
+        /* Seating Chart */
+        #seatingChartEditorContainer {
+            display: flex;
+            gap: 1rem;
+        }
+        .seating-grid {
+            flex-grow: 1;
+            display: grid;
+            gap: 0.5rem;
+            border: 1px solid var(--border-color);
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            background: var(--bg-primary);
+            overflow: auto;
+        }
+        .desk-cell {
+            border: 1px dashed var(--border-color);
+            border-radius: 4px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+            font-size: 0.8rem;
+        }
+        .desk-cell:hover { background-color: var(--bg-tertiary); }
+        .desk-cell.assigned { background-color: var(--success-color); color: white; border-style: solid; }
+        .desk-cell.selected-for-assignment { border-color: var(--primary-color); border-style: solid; box-shadow: 0 0 0 2px var(--primary-color-light); }
+        
+        .student-list-for-seating {
+            width: 250px;
+            flex-shrink: 0;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .student-list-for-seating .student-item {
+            padding: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            margin-bottom: 0.25rem;
+        }
+        .student-list-for-seating .student-item:hover { background-color: var(--bg-tertiary); }
+        .student-list-for-seating .student-item.assigned-elsewhere {
+            background-color: var(--bg-tertiary);
+            color: var(--text-muted);
+            text-decoration: line-through;
+            cursor: not-allowed;
+        }
+
+        /* Timetable */
+        .timetable-grid {
+            display: grid;
+            border: 1px solid var(--border-color);
+        }
+        .timetable-cell, .timetable-header, .timetable-timeslot {
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.5rem;
+        }
+        .timetable-header, .timetable-timeslot {
+            background-color: var(--bg-tertiary);
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            main { padding: 1rem; }
+            .header-actions .user-info, .header-actions .sync-status { display: none; }
+            .form-row { flex-direction: column; gap: 0; }
+            #seatingChartEditorContainer { flex-direction: column; }
+            .student-list-for-seating { width: 100%; max-height: 200px; }
+        }
+
+        /* Utility classes */
+        .d-flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-1 { gap: 0.5rem; }
+        .gap-2 { gap: 1rem; }
+        .mt-1 { margin-top: 0.5rem; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .w-full { width: 100%; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- HEADER -->
+        <header>
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Gestion Scolaire Avancée</span>
+            </div>
+            <div class="header-actions">
+                <div class="user-info" id="userInfo">
+                    <span>Mode local</span>
+                </div>
+                <button class="btn-icon theme-toggle" id="theme-toggle-btn" onclick="window.toggleTheme()" aria-label="Basculer le thème">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- NAVIGATION -->
+        <nav class="nav-container">
+            <div class="nav-tabs" id="navTabs">
+                <div class="nav-tab active" onclick="window.switchTab(event, 'dashboard')"><i class="fas fa-chart-line"></i> Dashboard</div>
+                <div class="nav-tab" onclick="window.switchTab(event, 'classes')"><i class="fas fa-school"></i> Classes</div>
+                <div class="nav-tab" onclick="window.switchTab(event, 'students')"><i class="fas fa-user-graduate"></i> Élèves</div>
+                <div class="nav-tab" onclick="window.switchTab(event, 'groups')"><i class="fas fa-users"></i> Groupes</div>
+                <div class="nav-tab" onclick="window.switchTab(event, 'evaluations')"><i class="fas fa-clipboard-list"></i> Évaluations & Notes</div>
+                <div class="nav-tab" onclick="window.switchTab(event, 'absences')"><i class="fas fa-calendar-xmark"></i> Absences</div>
+                <div class="nav-tab" onclick="window.switchTab(event, 'seatingPlans')"><i class="fas fa-border-all"></i> Plan de classe</div>
+                <div class="nav-tab" onclick="window.switchTab(event, 'timetable')"><i class="fas fa-calendar-alt"></i> Emploi du temps</div>
+                <div class="nav-tab" onclick="window.switchTab(event, 'reports')"><i class="fas fa-file-invoice"></i> Bulletins & Rapports</div>
+                <div class="nav-tab" onclick="window.switchTab(event, 'settings')"><i class="fas fa-cog"></i> Paramètres</div>
+            </div>
+        </nav>
+
+        <!-- MAIN CONTENT -->
+        <main>
+            <div id="alertContainer" class="alert-container"></div>
+            
+            <!-- Dashboard -->
+            <div id="dashboard" class="tab-content active">
+                <div class="stats-grid" id="statsGrid">
+                    <!-- Stats cards will be generated by JS -->
+                </div>
+                <div class="dashboard-grid mt-1">
+                    <div class="dashboard-col">
+                        <div class="card">
+                            <div class="card-header"><h2 class="card-title"><i class="fas fa-calendar-day"></i> Emploi du temps du jour</h2></div>
+                            <div class="card-body" id="todaySchedule">
+                                <!-- Today's schedule generated by JS -->
+                            </div>
+                        </div>
+                         <div class="card">
+                            <div class="card-header"><h2 class="card-title"><i class="fas fa-clipboard-check"></i> Évaluations récentes</h2></div>
+                            <div class="card-body" id="recentEvaluations">
+                                <!-- Recent evaluations generated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dashboard-col">
+                        <div class="card">
+                            <div class="card-header"><h2 class="card-title"><i class="fas fa-school"></i> Aperçu des classes</h2></div>
+                            <div class="card-body" id="classesOverview">
+                                <!-- Classes overview generated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Classes -->
+            <div id="classes" class="tab-content">
+                 <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Gestion des classes</h2>
+                        <div class="card-actions">
+                            <button class="btn btn-primary" onclick="window.openClassModal()"><i class="fas fa-plus"></i> Nouvelle classe</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead><tr><th>Nom</th><th>Niveau</th><th>Année</th><th>Élèves</th><th>Actions</th></tr></thead>
+                                <tbody id="classesTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students -->
+            <div id="students" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Gestion des élèves</h2>
+                        <div class="card-actions">
+                             <div class="form-group">
+                                <select id="studentClassFilter" class="form-select" onchange="window.filterStudents()">
+                                    <option value="all">Toutes les classes</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" onclick="window.openStudentModal()"><i class="fas fa-plus"></i> Nouvel élève</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead><tr><th>Nom</th><th>Prénom</th><th>Genre</th><th>Classe</th><th>Groupes</th><th>Date naissance</th><th>Actions</th></tr></thead>
+                                <tbody id="studentsTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+             <!-- Groups -->
+            <div id="groups" class="tab-content">
+                 <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Gestion des groupes</h2>
+                        <div class="card-actions">
+                            <button class="btn btn-primary" onclick="window.openGroupModal()"><i class="fas fa-plus"></i> Nouveau groupe</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead><tr><th>Nom</th><th>Type</th><th>Classe</th><th>Membres</th><th>Actions</th></tr></thead>
+                                <tbody id="groupsTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Evaluations -->
+            <div id="evaluations" class="tab-content">
+                <div class="card">
+                     <div class="card-header">
+                        <h2 class="card-title">Évaluations et Saisie des Notes</h2>
+                        <div class="card-actions">
+                            <button class="btn btn-primary" onclick="window.openEvaluationCreatorModal()"><i class="fas fa-plus"></i> Nouvelle évaluation</button>
+                             <button class="btn btn-secondary" onclick="window.exportGradesByPeriod()"><i class="fas fa-file-csv"></i> Export Période</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-row" id="evaluationFilters">
+                            <div class="form-group"><label class="form-label" for="gradeTargetTypeFilter">Type</label><select id="gradeTargetTypeFilter" class="form-select"><option value="class">Classe</option><option value="group">Groupe</option></select></div>
+                            <div class="form-group"><label class="form-label" for="gradeTargetFilter">Classe/Groupe</label><select id="gradeTargetFilter" class="form-select"></select></div>
+                            <div class="form-group"><label class="form-label" for="gradePeriodFilter">Période</label><select id="gradePeriodFilter" class="form-select"></select></div>
+                            <div class="form-group"><label class="form-label" for="gradeSubjectFilter">Matière</label><select id="gradeSubjectFilter" class="form-select"></select></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div id="gradeTableContainer" class="grade-table-container">
+                            <p class="text-center text-muted">Sélectionnez une classe/groupe pour afficher le tableau des notes.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Absences -->
+            <div id="absences" class="tab-content">
+                 <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Gestion des absences</h2>
+                        <div class="card-actions">
+                            <div class="form-group">
+                                <select id="absenceClassFilter" class="form-select" onchange="window.updateAbsencesTable()">
+                                    <option value="all">Toutes les classes</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" onclick="window.openAbsenceModal()"><i class="fas fa-plus"></i> Nouvelle absence</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead><tr><th>Élève</th><th>Classe</th><th>Date</th><th>Type</th><th>Motif</th><th>Justifiée</th><th>Actions</th></tr></thead>
+                                <tbody id="absencesTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seating Plans -->
+            <div id="seatingPlans" class="tab-content">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title">Gestion des Salles</h2><button class="btn btn-primary btn-sm" onclick="window.openRoomModal()"><i class="fas fa-plus"></i> Nouvelle Salle</button></div>
+                    <div class="card-body"><div class="table-container"><table class="table"><thead><tr><th>Nom</th><th>Description</th><th>Dimensions</th><th>Actions</th></tr></thead><tbody id="roomsTable"></tbody></table></div></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title">Gestion des Plans de Classe</h2><button class="btn btn-primary" onclick="window.openSeatingChartModal()"><i class="fas fa-plus"></i> Créer un Plan de Classe</button></div>
+                    <div class="card-body"><div class="table-container"><table class="table"><thead><tr><th>Nom</th><th>Classe</th><th>Salle</th><th>Créé le</th><th>Actions</th></tr></thead><tbody id="seatingChartsTable"></tbody></table></div></div>
+                </div>
+            </div>
+
+            <!-- Timetable -->
+            <div id="timetable" class="tab-content">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title">Emploi du Temps</h2>
+                        <div class="card-actions timetable-controls">
+                            <button class="btn btn-secondary" id="prevWeekBtn"><i class="fas fa-chevron-left"></i> Semaine précédente</button>
+                            <span id="currentWeekLabel" class="week-label"></span>
+                            <button class="btn btn-secondary" id="nextWeekBtn">Semaine suivante <i class="fas fa-chevron-right"></i></button>
+                            <div class="d-flex gap-1 items-center" style="margin-left: auto;">
+                                <label class="btn btn-secondary">
+                                    <i class="fas fa-file-upload"></i> Importer (.json)
+                                    <input type="file" id="importTimetableInput" accept=".json" onchange="window.importTimetableLessonsFromJson(event)" style="display:none;">
+                                </label>
+                                <button class="btn-icon" title="Aide format JSON EDT" onclick="window.openJsonTemplate('timetableLessons')"><i class="fas fa-circle-question"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="timetableDisplayContainer" class="timetable-container"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reports -->
+            <div id="reports" class="tab-content">
+                 <div class="card">
+                     <div class="card-header"><h2 class="card-title">Bulletins & Rapports</h2></div>
+                    <div class="card-body">
+                        <div class="form-row" id="reportFilters">
+                            <div class="form-group"><label class="form-label" for="reportClassFilter">Classe</label><select id="reportClassFilter" class="form-select"></select></div>
+                            <div class="form-group"><label class="form-label" for="reportPeriodFilter">Période</label><select id="reportPeriodFilter" class="form-select"></select></div>
+                            <div class="form-group"><label class="form-label" for="reportTypeFilter">Type de rapport</label><select id="reportTypeFilter" class="form-select"><option value="bulletin">Bulletin</option><option value="overview">Vue d'ensemble</option><option value="absences">Rapport d'absences</option><option value="comparison">Comparaison</option></select></div>
+                            <button class="btn btn-primary" onclick="window.generateReport()">Générer</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body" id="reportContent"><p class="text-center text-muted">Le rapport généré apparaîtra ici.</p></div>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div id="settings" class="tab-content">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title">Import & Export de Données</h2></div>
+                    <div class="card-body">
+                        <p>Sauvegardez l'ensemble de vos données dans un fichier JSON, ou importez un fichier pour restaurer votre état de travail.</p>
+                        <div class="d-flex gap-2 mt-1">
+                             <button class="btn btn-primary" onclick="window.exportDataAsJson()"><i class="fas fa-file-download"></i> Exporter les données (JSON)</button>
+                             <label class="btn btn-secondary">
+                                <i class="fas fa-file-upload"></i> Importer les données (JSON)
+                                <input type="file" id="importFileInput" accept=".json" onchange="window.importDataFromJson(event)" style="display: none;">
+                            </label>
+                            <button class="btn-icon" title="Aide format JSON" onclick="window.openJsonTemplate('fullData')"><i class="fas fa-circle-question"></i></button>
+                        </div>
+                         <p class="text-muted mt-1"><strong>Attention :</strong> L'importation d'un fichier écrasera toutes les données actuellement présentes dans l'application.</p>
+                         
+                         <details class="mt-1">
+                             <summary>Aide : Structure des données JSON</summary>
+                             <div id="jsonHelpTabs" class="mt-1"></div>
+                             <div id="jsonHelpContent" class="mt-1" style="background: var(--bg-tertiary); padding:1rem; border-radius: var(--border-radius); max-height: 280px; overflow:auto;"></div>
+                         </details>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title">Synchronisation Calendrier iCal</h2></div>
+                    <div class="card-body">
+                        <p>Entrez l'URL de votre calendrier au format iCal (.ics) pour l'afficher dans votre emploi du temps.</p>
+                        <div class="form-group mt-1">
+                            <label for="icalUrlInput" class="form-label">URL du calendrier iCal</label>
+                            <input type="url" id="icalUrlInput" class="form-input" placeholder="https://.../mon_calendrier.ics">
+                        </div>
+                        <button class="btn btn-primary" onclick="window.saveIcalUrl()"><i class="fas fa-save"></i> Sauvegarder l'URL</button>
+                         <p class="text-muted mt-1"><strong>Note :</strong> La récupération peut échouer si le calendrier n'est pas publiquement accessible (problème de CORS).</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Matières</h2>
+                        <div class="card-actions">
+                            <button class="btn btn-primary btn-sm" onclick="window.openSubjectModal()"><i class="fas fa-plus"></i> Ajouter une matière</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container"><table class="table"><thead><tr><th>Nom</th><th class="text-right">Actions</th></tr></thead><tbody id="subjectsTable"></tbody></table></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Périodes</h2>
+                        <div class="card-actions">
+                            <button class="btn btn-primary btn-sm" onclick="window.openPeriodModal()"><i class="fas fa-plus"></i> Ajouter une période</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container"><table class="table"><thead><tr><th>Nom</th><th class="text-right">Actions</th></tr></thead><tbody id="periodsTable"></tbody></table></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title">Grille Horaire</h2><button class="btn btn-primary btn-sm" onclick="window.openTimeSlotModal()"><i class="fas fa-plus"></i> Ajouter un créneau</button></div>
+                    <div class="card-body"><div class="table-container"><table class="table"><thead><tr><th>Jour</th><th>Début</th><th>Fin</th><th>Étiquette</th><th>Actions</th></tr></thead><tbody id="timetableSlotsTable"></tbody></table></div></div>
+                </div>
+                 <div class="card">
+                    <div class="card-header"><h2 class="card-title">Compétences</h2>
+                        <div class="card-actions gap-2">
+                             <select id="skillSubjectFilter" class="form-select"></select>
+                            <button class="btn btn-primary btn-sm" onclick="window.openSkillModal()"><i class="fas fa-plus"></i> Ajouter une compétence</button>
+                        </div>
+                    </div>
+                    <div class="card-body"><div class="table-container"><table class="table"><thead><tr><th>Nom</th><th>Description</th><th>Matière(s)</th><th>Actions</th></tr></thead><tbody id="skillsTable"></tbody></table></div></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title">Niveaux d'Acquisition</h2><button class="btn btn-primary btn-sm" onclick="window.openAcquisitionLevelModal()"><i class="fas fa-plus"></i> Ajouter un niveau</button></div>
+                    <div class="card-body"><div class="table-container"><table class="table"><thead><tr><th>Ordre</th><th>Code</th><th>Libellé</th><th>% Réussite</th><th>Notes /20</th><th>Aperçu</th><th>Actions</th></tr></thead><tbody id="acquisitionLevelsTable"></tbody></table></div></div>
+                </div>
+            </div>
+
+            <!-- Import -->
+            <div id="importData" class="tab-content">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title">Import & Export de Données</h2></div>
+                    <div class="card-body">
+                        <p>Sauvegardez vos données dans un fichier JSON ou importez un fichier pour restaurer votre état de travail.</p>
+                        <div class="d-flex gap-2 mt-1">
+                             <button class="btn btn-primary" onclick="window.exportDataAsJson()"><i class="fas fa-file-download"></i> Exporter les données (JSON)</button>
+                             <label class="btn btn-secondary">
+                                <i class="fas fa-file-upload"></i> Importer les données (JSON)
+                                <input type="file" id="importFileInput" accept=".json" onchange="window.importDataFromJson(event)" style="display: none;">
+                            </label>
+                            <button class="btn-icon" title="Aide format JSON" onclick="window.openJsonTemplate('fullData')"><i class="fas fa-circle-question"></i></button>
+                        </div>
+                         <p class="text-muted mt-1"><strong>Attention :</strong> L'importation d'un fichier écrasera toutes les données actuellement présentes dans l'application.</p>
+                    </div>
+                </div>
+            </div>
+            
+        </main>
+    </div>
+
+    <!-- MODALS -->
+
+    <!-- Class Modal -->
+    <div id="classModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="classModalTitle" class="modal-title">Nouvelle classe</h3><button class="btn-icon" onclick="window.closeModal('classModal')">&times;</button></div>
+            <div class="modal-body">
+                <form id="classForm">
+                    <input type="hidden" id="classId">
+                    <div class="form-group"><label for="className" class="form-label">Nom de la classe</label><input type="text" id="className" class="form-input" required></div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="classLevel" class="form-label">Niveau</label><input type="text" id="classLevel" class="form-input"></div>
+                        <div class="form-group"><label for="classYear" class="form-label">Année Scolaire</label><input type="text" id="classYear" class="form-input" placeholder="ex: 2023-2024"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.closeModal('classModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="window.saveClass()">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Student Modal -->
+    <div id="studentModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header"><h3 id="studentModalTitle" class="modal-title">Nouvel élève</h3><button class="btn-icon" onclick="window.closeModal('studentModal')">&times;</button></div>
+            <div class="modal-body">
+                <form id="studentForm">
+                    <input type="hidden" id="studentId">
+                    <div class="form-row">
+                        <div class="form-group"><label for="studentLastName" class="form-label">Nom</label><input type="text" id="studentLastName" class="form-input" required></div>
+                        <div class="form-group"><label for="studentFirstName" class="form-label">Prénom</label><input type="text" id="studentFirstName" class="form-input" required></div>
+                        <div class="form-group">
+                           <label for="studentGenre" class="form-label">Genre</label>
+                           <select id="studentGenre" class="form-select">
+                               <option value="">Non spécifié</option>
+                               <option value="F">F</option>
+                               <option value="G">G</option>
+                               <option value="Autre">Autre</option>
+                           </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="studentBirthDate" class="form-label">Date de naissance</label><input type="date" id="studentBirthDate" class="form-input"></div>
+                        <div class="form-group"><label for="studentClassId" class="form-label">Classe</label><select id="studentClassId" class="form-select" required></select></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.closeModal('studentModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="window.saveStudent()">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Modal -->
+    <div id="groupModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header"><h3 id="groupModalTitle" class="modal-title">Nouveau groupe</h3><button class="btn-icon" onclick="window.closeModal('groupModal')">&times;</button></div>
+            <div class="modal-body">
+                <form id="groupForm">
+                    <input type="hidden" id="groupId">
+                    <div class="form-row">
+                        <div class="form-group"><label for="groupName" class="form-label">Nom du groupe</label><input type="text" id="groupName" class="form-input" required></div>
+                        <div class="form-group"><label for="groupType" class="form-label">Type</label><input type="text" id="groupType" class="form-input" placeholder="ex: Groupe de soutien, LV2..."></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="groupClassId" class="form-label">Classe (pour sélection des élèves)</label>
+                        <select id="groupClassId" class="form-select" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Membres</label>
+                        <div id="groupStudentsContainer" class="skills-checkbox-container"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.closeModal('groupModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="window.saveGroup()">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Evaluation Creator Modal -->
+    <div id="evaluationCreatorModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header"><h3 class="modal-title">Nouvelle évaluation</h3><button class="btn-icon" onclick="window.closeModal('evaluationCreatorModal')">&times;</button></div>
+            <div class="modal-body">
+                <form id="evaluationForm">
+                    <div class="form-row">
+                        <div class="form-group"><label for="evalName" class="form-label">Nom de l'évaluation</label><input type="text" id="evalName" class="form-input" required></div>
+                        <div class="form-group"><label for="evalDate" class="form-label">Date</label><input type="date" id="evalDate" class="form-input" required></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="evalTargetType" class="form-label">Type Cible</label><select id="evalTargetType" class="form-select"><option value="class">Classe</option><option value="group">Groupe</option></select></div>
+                        <div class="form-group"><label for="evalTargetId" class="form-label">Classe/Groupe</label><select id="evalTargetId" class="form-select" required></select></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="evalPeriod" class="form-label">Période</label><select id="evalPeriod" class="form-select" required></select></div>
+                        <div class="form-group"><label for="evalSubject" class="form-label">Matière</label><select id="evalSubject" class="form-select" required></select></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="evalType" class="form-label">Type d'évaluation</label><select id="evalType" class="form-select"><option value="grade">Note</option><option value="skill">Compétences</option><option value="grade_skill">Note + Compétences</option></select></div>
+                        <div class="form-group" id="evalMaxPointsContainer"><label for="evalMaxPoints" class="form-label">Note sur</label><input type="number" id="evalMaxPoints" class="form-input" value="20"></div>
+                        <div class="form-group"><label for="evalCoefficient" class="form-label">Coefficient</label><input type="number" id="evalCoefficient" class="form-input" value="1" step="0.25"></div>
+                        <div class="form-group"><label for="evalBonus" class="form-label">Bonus</label><input type="checkbox" id="evalBonus" class="form-input"></div>
+                    </div>
+                    <div class="form-group" id="evalSkillsContainer" style="display:none;">
+                        <label class="form-label">Compétences évaluées</label>
+                        <div id="evaluationSkills" class="skills-checkbox-container"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.closeModal('evaluationCreatorModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="window.createEvaluation()">Créer</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Grade Modal -->
+    <div id="quickGradeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="quickGradeModalTitle" class="modal-title">Saisie rapide</h3><button class="btn-icon" onclick="window.closeModal('quickGradeModal')">&times;</button></div>
+            <div class="modal-body">
+                <form id="quickGradeForm">
+                    <p><strong>Élève :</strong> <span id="quickGradeStudentName"></span></p>
+                    <p><strong>Évaluation :</strong> <span id="quickGradeEvalName"></span></p>
+                    <div id="quickGradeValueContainer" class="form-group">
+                        <label id="quickGradeValueLabel" for="quickGradeValue" class="form-label">Note</label>
+                        <input type="text" id="quickGradeValue" class="form-input">
+                    </div>
+                    <div id="quickGradeSkillContainer" class="form-group">
+                        <label class="form-label">Compétences</label>
+                        <div id="quickGradeSkillLevels"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="quickGradeComment" class="form-label">Commentaire</label>
+                        <textarea id="quickGradeComment" class="form-textarea" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.closeModal('quickGradeModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="window.saveQuickGrade()">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Absence Modal -->
+    <div id="absenceModal" class="modal">
+        <div class="modal-content">
+             <div class="modal-header"><h3 id="absenceModalTitle" class="modal-title">Nouvelle absence</h3><button class="btn-icon" onclick="window.closeModal('absenceModal')">&times;</button></div>
+             <div class="modal-body">
+                 <form id="absenceForm">
+                     <input type="hidden" id="absenceId">
+                     <div class="form-group">
+                         <label for="absenceStudentId" class="form-label">Élève</label>
+                         <select id="absenceStudentId" class="form-select" required></select>
+                     </div>
+                     <div class="form-row">
+                         <div class="form-group"><label for="absenceDate" class="form-label">Date</label><input type="date" id="absenceDate" class="form-input" required></div>
+                         <div class="form-group"><label for="absenceType" class="form-label">Type</label><select id="absenceType" class="form-select"><option value="absence">Absence</option><option value="retard">Retard</option></select></div>
+                     </div>
+                     <div class="form-group"><label for="absenceReason" class="form-label">Motif</label><textarea id="absenceReason" class="form-textarea" rows="2"></textarea></div>
+                     <div class="form-group"><label for="absenceJustified" class="form-label"><input type="checkbox" id="absenceJustified" class="form-input" style="width: auto; margin-right: 0.5rem;"> Justifiée</label></div>
+                 </form>
+             </div>
+             <div class="modal-footer">
+                 <button class="btn btn-secondary" onclick="window.closeModal('absenceModal')">Annuler</button>
+                 <button class="btn btn-primary" onclick="window.saveAbsence()">Sauvegarder</button>
+             </div>
+        </div>
+    </div>
+    
+    <!-- Room Modal -->
+    <div id="roomModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="roomModalTitle" class="modal-title">Nouvelle Salle</h3><button class="btn-icon" onclick="window.closeModal('roomModal')">&times;</button></div>
+            <div class="modal-body">
+                <form id="roomForm">
+                    <input type="hidden" id="roomId">
+                    <div class="form-group"><label for="roomName" class="form-label">Nom</label><input type="text" id="roomName" class="form-input" required></div>
+                    <div class="form-group"><label for="roomDescription" class="form-label">Description</label><input type="text" id="roomDescription" class="form-input"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="roomRows" class="form-label">Rangées</label><input type="number" id="roomRows" class="form-input" min="1" value="5"></div>
+                        <div class="form-group"><label for="roomCols" class="form-label">Colonnes</label><input type="number" id="roomCols" class="form-input" min="1" value="6"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.closeModal('roomModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="window.saveRoom()">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Seating Chart Modal -->
+    <div id="seatingChartModal" class="modal">
+        <div class="modal-content xlarge">
+            <div class="modal-header"><h3 id="seatingChartModalTitle" class="modal-title">Créer un Plan de Classe</h3><button class="btn-icon" onclick="window.closeModal('seatingChartModal')">&times;</button></div>
+            <div class="modal-body">
+                <form id="seatingChartForm">
+                    <input type="hidden" id="seatingChartId">
+                    <div class="form-row">
+                        <div class="form-group"><label for="seatingChartName" class="form-label">Nom du plan</label><input type="text" id="seatingChartName" class="form-input" required></div>
+                        <div class="form-group"><label for="seatingChartClassId" class="form-label">Classe</label><select id="seatingChartClassId" class="form-select" onchange="window.renderSeatingChartEditor()" required></select></div>
+                        <div class="form-group"><label for="seatingChartRoomId" class="form-label">Salle</label><select id="seatingChartRoomId" class="form-select" onchange="window.renderSeatingChartEditor()" required></select></div>
+                    </div>
+                </form>
+                <div id="seatingChartEditorContainer" class="mt-1">
+                    <div id="seatingChartGrid" class="seating-grid"></div>
+                    <div id="seatingChartStudentList" class="student-list-for-seating"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.closeModal('seatingChartModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="window.saveSeatingChart()">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- TimeSlot Modal -->
+    <div id="timeSlotModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="timeSlotModalTitle" class="modal-title">Ajouter un créneau</h3><button class="btn-icon" onclick="window.closeModal('timeSlotModal')">&times;</button></div>
+            <div class="modal-body">
+                <form id="timeSlotForm">
+                    <input type="hidden" id="timeSlotId">
+                    <div class="form-group"><label for="timeSlotDay" class="form-label">Jour</label><select id="timeSlotDay" class="form-select"><option value="Lundi">Lundi</option><option value="Mardi">Mardi</option><option value="Mercredi">Mercredi</option><option value="Jeudi">Jeudi</option><option value="Vendredi">Vendredi</option><option value="Samedi">Samedi</option></select></div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="timeSlotStart" class="form-label">Début</label><input type="time" id="timeSlotStart" class="form-input" required></div>
+                        <div class="form-group"><label for="timeSlotEnd" class="form-label">Fin</label><input type="time" id="timeSlotEnd" class="form-input" required></div>
+                    </div>
+                    <div class="form-group"><label for="timeSlotLabel" class="form-label">Étiquette</label><input type="text" id="timeSlotLabel" class="form-input" placeholder="ex: M1, S2..."></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.closeModal('timeSlotModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="window.saveTimeSlot()">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skill Modal -->
+    <div id="skillModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="skillModalTitle" class="modal-title">Ajouter une compétence</h3><button class="btn-icon" onclick="window.closeModal('skillModal')">&times;</button></div>
+            <div class="modal-body">
+                <form id="skillForm">
+                    <input type="hidden" id="skillId">
+                    <div class="form-group"><label for="skillName" class="form-label">Nom</label><input type="text" id="skillName" class="form-input" required></div>
+                    <div class="form-group"><label for="skillDescription" class="form-label">Description</label><textarea id="skillDescription" class="form-textarea" rows="2"></textarea></div>
+                    <div class="form-group"><label for="skillSubjects" class="form-label">Matière(s) associée(s)</label><select id="skillSubjects" class="form-select" multiple></select></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.closeModal('skillModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="window.saveSkill()">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Acquisition Level Modal -->
+    <div id="acquisitionLevelModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header"><h3 id="acquisitionLevelModalTitle" class="modal-title">Ajouter un niveau d'acquisition</h3><button class="btn-icon" onclick="window.closeModal('acquisitionLevelModal')">&times;</button></div>
+            <div class="modal-body">
+                <form id="acquisitionLevelForm">
+                    <input type="hidden" id="acquisitionLevelId">
+                    <div class="form-row">
+                        <div class="form-group"><label for="acqLevelOrder" class="form-label">Ordre</label><input type="number" id="acqLevelOrder" class="form-input" required></div>
+                        <div class="form-group"><label for="acqLevelCode" class="form-label">Code</label><input type="text" id="acqLevelCode" class="form-input" required placeholder="ex: ++, +..."></div>
+                    </div>
+                    <div class="form-group"><label for="acqLevelLabel" class="form-label">Libellé</label><input type="text" id="acqLevelLabel" class="form-input" required placeholder="ex: Très bonne maîtrise"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="acqLevelSuccessRate" class="form-label">% Réussite</label><input type="number" id="acqLevelSuccessRate" class="form-input" min="0" max="100"></div>
+                        <div class="form-group"><label for="acqLevelGradeEquivalent" class="form-label">Notes /20</label><input type="text" id="acqLevelGradeEquivalent" class="form-input" placeholder="ex: 16-20"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="acqLevelColorBg" class="form-label">Couleur fond</label><input type="color" id="acqLevelColorBg" class="form-input"></div>
+                        <div class="form-group"><label for="acqLevelColorText" class="form-label">Couleur texte</label><input type="color" id="acqLevelColorText" class="form-input"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.closeModal('acquisitionLevelModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="window.saveAcquisitionLevel()">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subject Modal -->
+    <div id="subjectModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header"><h3 id="subjectModalTitle" class="modal-title">Ajouter une matière</h3><button class="btn-icon" onclick="window.closeModal('subjectModal')">&times;</button></div>
+        <div class="modal-body">
+          <form id="subjectForm"><input type="hidden" id="subjectIndex"><div class="form-group"><label class="form-label" for="subjectName">Nom</label><input id="subjectName" class="form-input" type="text" required></div></form>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="window.closeModal('subjectModal')">Annuler</button><button class="btn btn-primary" onclick="window.saveSubject()">Sauvegarder</button></div>
+      </div>
+    </div>
+
+    <!-- Period Modal -->
+    <div id="periodModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header"><h3 id="periodModalTitle" class="modal-title">Ajouter une période</h3><button class="btn-icon" onclick="window.closeModal('periodModal')">&times;</button></div>
+        <div class="modal-body">
+          <form id="periodForm"><input type="hidden" id="periodIndex"><div class="form-group"><label class="form-label" for="periodName">Nom</label><input id="periodName" class="form-input" type="text" required></div></form>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="window.closeModal('periodModal')">Annuler</button><button class="btn btn-primary" onclick="window.savePeriod()">Sauvegarder</button></div>
+      </div>
+    </div>
+
+    <!-- JSON Help Modal -->
+    <div id="jsonHelpModal" class="modal">
+      <div class="modal-content large">
+        <div class="modal-header"><h3 id="jsonHelpModalTitle" class="modal-title">Aide JSON</h3><button class="btn-icon" onclick="window.closeModal('jsonHelpModal')">&times;</button></div>
+        <div class="modal-body"><pre id="jsonHelpModalContent" style="margin:0; font-size:.85rem; white-space:pre-wrap;"></pre></div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="window.closeModal('jsonHelpModal')">Fermer</button></div>
+      </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3 class="modal-title">Confirmation</h3></div>
+            <div class="modal-body"><p id="confirmationMessage"></p></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="confirmCancelBtn">Annuler</button>
+                <button class="btn btn-danger" id="confirmOkBtn">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script type="module" src="script.js"></script>
+</body>
+</html>
