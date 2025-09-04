@@ -120,15 +120,43 @@ function clearDataAndListeners() {
 
 // --- DATA PERSISTENCE ---
 
-function saveDataToLocalStorage() {
+async function loadDataFromJsonFile() {
     try {
-        localStorage.setItem(APP_DATA_KEY, JSON.stringify(appState));
-        // We can show a subtle confirmation if needed, but it might be too noisy.
-        // showAlert('Données sauvegardées localement', 'success', 1000);
-    } catch (error) {
-        console.error("Error saving data to localStorage:", error);
-        showAlert("Erreur lors de la sauvegarde des données.", "danger");
+        const res = await fetch('./data.json', { cache: 'no-cache' });
+        if (!res.ok) return;
+        const fileData = await res.json();
+        Object.keys(appState).forEach(k => {
+            if (fileData[k] !== undefined) appState[k] = fileData[k];
+        });
+    } catch (e) {
+        console.warn('Aucun data.json lisible, utilisation des données par défaut.', e);
     }
+}
+
+async function saveDataToLocalStorage() {
+    // Remplace la persistance locale par l'écriture vers data.json
+    const json = JSON.stringify(appState, null, 2);
+    // Tentative via File System Access API si disponible
+    if (window.showSaveFilePicker) {
+        try {
+            if (!window.__dataFileHandle) {
+                window.__dataFileHandle = await window.showSaveFilePicker({
+                    suggestedName: 'data.json',
+                    types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+                });
+            }
+            const writable = await window.__dataFileHandle.createWritable();
+            await writable.write(json);
+            await writable.close();
+            showAlert('Données sauvegardées dans data.json', 'success');
+            return;
+        } catch (e) {
+            console.warn('Écriture via File System Access refusée/échouée, fallback téléchargement.', e);
+        }
+    }
+    // Fallback: téléchargement d’un fichier data.json
+    downloadFile('data.json', json, 'application/json');
+    showAlert('Fichier data.json téléchargé (enregistrez-le dans le dossier de l\'app).', 'info');
 }
 
 function loadDataFromLocalStorage() {
@@ -150,7 +178,7 @@ function loadDataFromLocalStorage() {
 }
 
 function initializeAppData() {
-    loadDataFromLocalStorage();
+    loadDataFromLocalStorage(); // rétro-compatibilité si data.json absent
     // Initial UI render
     updateClassesTable();
     updateStudentsTable();
@@ -428,14 +456,6 @@ function updateDashboard() {
     } else {
         recentEvaluations.innerHTML = `<p class="text-muted text-center">Aucune évaluation récente.</p>`;
     }
-}
-
-// --- FILTERS ---
-function updateAllFilters() {
-    populateSelectWithOptions('studentClassFilter', appState.classes, 'Toutes les classes');
-    populateSelectWithOptions('absenceClassFilter', appState.classes, 'Toutes les classes');
-    populateSelectWithOptions('studentClassId', appState.classes, 'Choisir une classe');
-    updateEvaluationFilters();
 }
 
 // ** EVALUATIONS & NOTES **
@@ -1780,8 +1800,9 @@ function generateColorFromString(str) {
 }
 
 // --- INITIALIZATION ---
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     loadTheme();
+    await loadDataFromJsonFile();
     initializeAppData();
     document.getElementById('evaluationFilters').querySelectorAll('select').forEach(sel => {
        sel.addEventListener('change', loadGradeTable);
@@ -1794,7 +1815,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initJsonHelpTabs(){
   const tabs = [
-    {id:'base',label:'Base complète', ex: JSON.stringify({"classes":[{"id":"class-1","name":"6ème A","level":"6ème","year":"2024-2025"}],"students":[{"id":"uuid-student-1","lastName":"Dupont","firstName":"Jean","genre":"G","birthDate":"2010-05-12","classId":"class-1"}],"groups":[{"id":"grp-1","name":"Soutien","type":"Aide","classId":"class-1","members":["uuid-student-1"]}],"evaluations":[{"id":"ev1","name":"Contrôle 1","date":"2025-09-01","targetType":"class","targetId":"class-1","period":"Trimestre 1","subject":"Mathématiques","type":"grade","maxPoints":20,"coefficient":1,"isBonus":false,"skillIds":[]}],"student_grades":[{"id":"g1","studentId":"uuid-student-1","evaluationId":"ev1","value":"14","comment":"Bien","skillLevels":{}}],"absences":[{"id":"abs1","studentId":"uuid-student-1","date":"2025-09-02","type":"absence","reason":"malade","justified":true}],"timetable_slots":[{"id":"t1","day":"Lundi","start":"08:00","end":"08:55","label":"M1"}],"skills":[{"id":"sk1","name":"Calculer","description":"Opérations de base","subjects":["Mathématiques"]}],"acquisition_levels":[{"id":"lvl1","order":1,"code":"++","label":"Très bonne maîtrise","successRate":100,"gradeEquivalent":"16-20","colorBg":"#dcfce7","colorText":"#14532d"}],"rooms":[{"id":"room1","name":"Salle 101","description":"Salle de classe standard","rows":5,"cols":6}],"seating_charts":[{"id":"sc1","name":"Plan de début d'année","classId":"class-1","roomId":"room1","arrangement":{"0-0":"uuid-student-1"},"createdAt":"2024-09-01T10:00:00.000Z"}],"timetable_lessons":[{"date":"2025-09-01","start":"08:00","end":"08:55","subject":"Mathématiques","classId":"class-1","room":"101","teacher":"Mme Martin"}],"subjects":["Français","Mathématiques","Histoire"],"periods":["Trimestre 1","Trimestre 2","Trimestre 3"]})},
+    {id:'base',label:'Base complète', ex: JSON.stringify({"classes":[{"id":"class-1","name":"6ème A","level":"6ème","year":"2024-2025"}],"students":[{"id":"uuid-student-1","lastName":"Dupont","firstName":"Jean","genre":"G","birthDate":"2010-05-12","classId":"class-1"}],"groups":[{"id":"grp-1","name":"Soutien","type":"Aide","classId":"class-1","members":["uuid-student-1"]}],"evaluations":[{"id":"ev1","name":"Contrôle 1","date":"2025-09-01","targetType":"class","targetId":"class-1","period":"Trimestre 1","subject":"Mathématiques","type":"grade","maxPoints":20,"coefficient":1,"isBonus":false,"skillIds":[]}],"student_grades":[{"id":"g1","studentId":"uuid-student-1","evaluationId":"ev1","value":"14","comment":"Bien","skillLevels":{}}],"absences":[{"id":"abs1","studentId":"uuid-student-1","date":"2025-09-02","type":"absence","reason":"malade","justified":true}],"timetable_slots":[{"id":"t1","day":"Lundi","start":"08:00","end":"08:55","label":"M1"}],"skills":[{"id":"sk1","name":"Calculer","description":"Opérations de base","subjects":["Mathématiques"]}],"acquisition_levels":[{"id":"lvl1","order":1,"code":"++","label":"Très bonne maîtrise","successRate":100,"gradeEquivalent":"16-20","colorBg":"#dcfce7","colorText":"#14532d"}],"rooms":[{"id":"room1","name":"Salle 101","description":"Salle de classe standard","rows":5,"cols":6}],"seating_charts":[{"id":"sc1","name":"Plan de début d'année","classId":"class-1","roomId":"room1","arrangement":{"0-0":"uuid-student-1"},"createdAt":"2024-09-01T10:00:00.000Z"}],"timetable_lessons":[{"date":"2025-09-01","start":"08:00","end":"08:50","subject":"Mathématiques","classId":"class-1","room":"101","teacher":"Mme Martin"}],"subjects":["Français","Mathématiques","Histoire"],"periods":["Trimestre 1","Trimestre 2","Trimestre 3"]})},
     {id:'eleves',label:'Élèves',ex:`[{"id":"uuid","lastName":"Dupont","firstName":"Jean","genre":"G","birthDate":"2010-05-12","classId":"class-1"}]`},
     {id:'classes',label:'Classes',ex:`[{"id":"class-1","name":"6ème A","level":"6ème","year":"2024-2025"}]`},
     {id:'groupes',label:'Groupes',ex:`[{"id":"grp-1","name":"Soutien","type":"Aide","classId":"class-1","members":["uuid"]}]`},
@@ -1829,3 +1850,14 @@ window.openJsonTemplate = openJsonTemplate;
 
 // Ensure inline handlers always find a function
 window.saveQuickGrade = window.saveQuickGrade || function () { console.warn('saveQuickGrade non initialisée'); };
+
+// Add: global filters refresh (safe on missing DOM)
+function updateAllFilters(){
+  const classes=appState.classes.map(c=>({id:c.id,name:c.name}));
+  const add=(id,opts,all)=>{const el=document.getElementById(id); if(!el) return; el.innerHTML=(all?'<option value="all">Toutes les classes</option>':'<option value="">Choisir...</option>')+(opts||[]).map(o=>`<option value="${o.id}">${o.name}</option>`).join('');};
+  add('studentClassFilter',classes,true); add('absenceClassFilter',classes,true);
+  if(document.getElementById('gradeTargetTypeFilter')) updateEvaluationFilters();
+  if(document.getElementById('reportClassFilter')) populateSelectWithOptions('reportClassFilter',appState.classes,'Choisir une classe');
+  if(document.getElementById('reportPeriodFilter')) populateSelectWithOptions('reportPeriodFilter',appState.periods.map(p=>({id:p,name:p})),'Choisir une période');
+}
+window.updateAllFilters = updateAllFilters;
