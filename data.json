@@ -1,0 +1,17 @@
+{
+  "classes": [],
+  "students": [],
+  "groups": [],
+  "evaluations": [],
+  "student_grades": [],
+  "absences": [],
+  "timetable_slots": [],
+  "skills": [],
+  "acquisition_levels": [],
+  "rooms": [],
+  "seating_charts": [],
+  "subjects": ["Français","Mathématiques","Histoire","Géographie","Sciences","Anglais","EPS","Arts"],
+  "periods": ["Trimestre 1","Trimestre 2","Trimestre 3"],
+  "timetable_lessons": [],
+  "icalUrl": ""
+}
